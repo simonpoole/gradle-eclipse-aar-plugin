@@ -2,9 +2,14 @@ package com.github.ksoichiro.eclipse.aar
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 
 class BaseTask extends DefaultTask {
+    @Optional
+    @Input
     AarPluginExtension extension
+    @Input
     Set<AndroidProject> projects = []
 
     def findTargetProjects() {

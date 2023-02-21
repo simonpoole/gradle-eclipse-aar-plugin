@@ -30,16 +30,6 @@ class ProjectFileGenerator extends MetaDataFileGenerator {
         |\t\t\t<arguments>
         |\t\t\t</arguments>
         |\t\t</buildCommand>
-        |\t\t<buildCommand>
-        |\t\t\t<name>org.eclipse.jdt.core.javabuilder</name>
-        |\t\t\t<arguments>
-        |\t\t\t</arguments>
-        |\t\t</buildCommand>
-        |\t\t<buildCommand>
-        |\t\t\t<name>${toolPackage}.ApkBuilder</name>
-        |\t\t\t<arguments>
-        |\t\t\t</arguments>
-        |\t\t</buildCommand>
         |\t</buildSpec>
         |\t<natures>
         |\t\t<nature>${toolPackage}.AndroidNature</nature>

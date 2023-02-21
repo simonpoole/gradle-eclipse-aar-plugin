@@ -7,6 +7,7 @@ buildscript {
     }
     dependencies {
         classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
+        classpath 'com.github.ksoichiro:gradle-eclipse-aar-plugin:0.3.1'
     }
 }
 
@@ -14,7 +15,7 @@ plugins {
     id 'maven'
     id 'maven-publish'
     id 'com.jfrog.bintray' version '1.2'
-    id 'net.saliman.cobertura' version '2.2.5'
+ //   id 'net.saliman.cobertura' version '2.2.7'
     id 'com.github.kt3k.coveralls' version '2.3.1'
     id 'com.github.ksoichiro.build.info' version '0.1.2'
 }
@@ -49,6 +50,8 @@ if (isReleaseBuild) {
     sonatypeRepositoryUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
 }
 
+apply from: '../../gradle-tasks/eclipse-3'
+
 // Note: These properties must be defined in ~/.gradle/gradle.properties
 // and signing.keyId, signing.password, signing.secretKeyRingFile, too.
 def username = hasProperty("nexusUsername") ? project.getProperty("nexusUsername") : ""
@@ -62,7 +65,7 @@ dependencies {
     compile localGroovy()
     compile 'org.apache.maven:maven-artifact:3.3.9'
     testCompile 'com.android.tools.build:gradle:1.0.0'
-    testCompile ('org.spockframework:spock-core:1.0-groovy-2.3') {
+    testCompile ('org.spockframework:spock-core:1.0-groovy-2.4') {
         exclude group: 'org.codehaus.groovy', module: 'groovy-all'
     }
 }
@@ -77,10 +80,10 @@ install {
     }
 }
 
-cobertura {
-    coverageFormats = ['html', 'xml']
-    coverageSourceDirs = sourceSets.main.groovy.srcDirs
-}
+//cobertura {
+//    coverageFormats = ['html', 'xml']
+//    coverageSourceDirs = sourceSets.main.groovy.srcDirs
+//}
 
 afterEvaluate { project ->
     uploadArchives {

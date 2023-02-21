@@ -9,6 +9,7 @@ class CleanTask extends BaseTask {
 
     @TaskAction
     def exec() {
+
         extension = project.eclipseAar
 
         findTargetProjects()

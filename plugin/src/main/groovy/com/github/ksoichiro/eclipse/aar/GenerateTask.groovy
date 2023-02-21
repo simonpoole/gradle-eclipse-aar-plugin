@@ -7,11 +7,19 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.artifacts.SelfResolvingDependency
 import org.gradle.api.file.CopySpec
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 
 class GenerateTask extends BaseTask {
+    @Optional
+    @Input
     Map<AndroidProject, Set<AndroidDependency>> fileDependencies
+    @Optional
+    @Input
     Map<AndroidProject, Set<AndroidDependency>> projectDependencies
+    @Optional
+    @Input
     Map<String, ResolvedDependency> allConfigurationsDependencies
 
     GenerateTask() {
@@ -64,7 +72,7 @@ class GenerateTask extends BaseTask {
                         }
                         def d = new AndroidDependency()
                         d.with {
-                            name = dependencyProject.project.name
+                            d.name = dependencyProject.project.name
                             artifactType = AndroidArtifactType.PROJECT
                         }
                         if (!projectDependencies[p]) {
@@ -149,7 +157,7 @@ class GenerateTask extends BaseTask {
                     dependency = new AndroidDependency()
                     dependency.with {
                         group = v.moduleGroup
-                        name = v.moduleName
+                        dependency.name = v.moduleName
                         version = v.moduleVersion
                         if (baseFilename != "${v.moduleName}-${v.moduleVersion}") {
                             classifier = baseFilename.replace("${v.moduleName}-${v.moduleVersion}-", '')
@@ -195,7 +203,7 @@ class GenerateTask extends BaseTask {
                     }
                     latestDependency = duplicateDependencies.find {
                         getDependencyFromFile(it.file)?.version == latestJarVersion
-                    }
+                    }                   
                 } else {
                     latestJarVersion = dependency.version
                     latestDependency = dependency

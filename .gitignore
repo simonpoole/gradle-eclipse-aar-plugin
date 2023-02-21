@@ -4,3 +4,5 @@
 .gradle/
 build/
 samples/repo/
+/.classpath
+/.project
