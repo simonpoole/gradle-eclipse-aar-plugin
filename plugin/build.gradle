@@ -4,20 +4,17 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
         mavenCentral()
+        mavenLocal()
     }
     dependencies {
         classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
-        classpath 'com.github.ksoichiro:gradle-eclipse-aar-plugin:0.3.1'
+        classpath 'ch.poole.misc:gradle-eclipse-aar-plugin:0.1.0'
     }
 }
 
 plugins {
-    id 'maven'
     id 'maven-publish'
-    id 'com.jfrog.bintray' version '1.2'
- //   id 'net.saliman.cobertura' version '2.2.7'
     id 'com.github.kt3k.coveralls' version '2.3.1'
-    id 'com.github.ksoichiro.build.info' version '0.1.2'
 }
 
 apply plugin: 'groovy'
@@ -57,15 +54,13 @@ apply from: '../../gradle-tasks/eclipse-3'
 def username = hasProperty("nexusUsername") ? project.getProperty("nexusUsername") : ""
 def password = hasProperty("nexusPassword") ? project.getProperty("nexusPassword") : ""
 
-def bintrayUsername = hasProperty("bintrayUsername") ? project.getProperty("bintrayUsername") : ""
-def bintrayApiKey = hasProperty("bintrayApiKey") ? project.getProperty("bintrayApiKey") : ""
-
 dependencies {
-    compile gradleApi()
-    compile localGroovy()
-    compile 'org.apache.maven:maven-artifact:3.3.9'
-    testCompile 'com.android.tools.build:gradle:1.0.0'
-    testCompile ('org.spockframework:spock-core:1.0-groovy-2.4') {
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation 'org.apache.maven:maven-artifact:3.3.9'
+    testImplementation 'junit:junit:4.13'
+    testImplementation 'com.android.tools.build:gradle:1.0.0'
+    testImplementation ('org.spockframework:spock-core:2.3-groovy-3.0') {
         exclude group: 'org.codehaus.groovy', module: 'groovy-all'
     }
 }
@@ -74,129 +69,43 @@ repositories {
     mavenCentral()
 }
 
-install {
-    repositories.mavenInstaller {
-        pom.artifactId = POM_ARTIFACT_ID
-    }
+signing {
+    required { isReleaseBuild && gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
 }
 
-//cobertura {
-//    coverageFormats = ['html', 'xml']
-//    coverageSourceDirs = sourceSets.main.groovy.srcDirs
-//}
-
-afterEvaluate { project ->
-    uploadArchives {
-        if (isReleaseBuild) {
-            repositories {
-                mavenDeployer {
-                    beforeDeployment { deployment -> signing.signPom(deployment) }
-
-                    repository(url: sonatypeRepositoryUrl) {
-                        authentication(userName: username, password: password)
-                    }
-
-                    pom.project {
-                        name POM_NAME
-                        groupId GROUP
-                        description POM_DESCRIPTION
-                        url POM_URL
-                        inceptionYear POM_INCEPTION_YEAR
-
-                        scm {
-                            url POM_SCM_URL
-                            connection POM_SCM_CONNECTION
-                            developerConnection POM_SCM_DEV_CONNECTION
-                        }
-
-                        licenses {
-                            license {
-                                name POM_LICENSE_NAME
-                                url POM_LICENSE_URL
-                                distribution POM_LICENSE_DIST
-                            }
-                        }
-
-                        developers {
-                            developer {
-                                id POM_DEVELOPER_ID
-                                name POM_DEVELOPER_NAME
-                                url POM_DEVELOPER_URL
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            // for development
-            repositories {
-                mavenDeployer {
-                    repository(url: uri('../samples/repo'))
-                }
-            }
-        }
-    }
-
-    signing {
-        required { isReleaseBuild && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.archives
-    }
-
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-
-    publishing {
-        publications {
-            plugin(MavenPublication) {
-                groupId GROUP
-                artifactId POM_ARTIFACT_ID
-                version VERSION_NAME
-
-                from components.java
-                artifact sourcesJar
-                artifact javadocJar
-            }
-        }
-    }
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
 }
 
-bintray {
-    user = bintrayUsername
-    key = bintrayApiKey
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
 
-    publications = ['plugin']
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
 
-    pkg {
-        repo = 'maven'
-        name = POM_NAME
-        desc = POM_DESCRIPTION
-        websiteUrl = POM_URL
-        issueTrackerUrl = BINTRAY_ISSUE_TRACKER_URL
-        vcsUrl = BINTRAY_VCS_URL
-        licenses = ['Apache-2.0']
-        labels = ['gradle', 'plugin', 'Android', 'eclipse', 'AAR']
-        publicDownloadNumbers = true
-        version {
-            attributes = ['gradle-plugin': 'com.github.ksoichiro.eclipse.aar:com.github.ksoichiro:gradle-eclipse-aar-plugin']
+publishing {
+    publications {
+        plugin(MavenPublication) {
+            groupId GROUP
+            artifactId POM_ARTIFACT_ID
+            version VERSION_NAME
+
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
         }
     }
 }
 
 pluginBundle {
     website = POM_URL
-    vcsUrl = BINTRAY_VCS_URL
+   // vcsUrl = BINTRAY_VCS_URL
 
     description = POM_DESCRIPTION
 
