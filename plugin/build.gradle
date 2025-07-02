@@ -18,12 +18,17 @@ plugins {
 }
 
 apply plugin: 'groovy'
-apply plugin: 'com.gradle.plugin-publish'
+apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 group = GROUP
 version = VERSION_NAME
 archivesBaseName = POM_ARTIFACT_ID
+
+ext {
+    user = System.getenv('SONATYPE_USER')
+    password = System.getenv('SONATYPE_PASSWORD')
+}
 
 // To release:
 // ./gradlew clean assemble uploadArchives -Prelease
@@ -92,32 +97,51 @@ artifacts {
 publishing {
     publications {
         plugin(MavenPublication) {
-            groupId GROUP
-            artifactId POM_ARTIFACT_ID
+            groupId 'ch.poole.misc'
+            artifactId POM_NAME
             version VERSION_NAME
 
             from components.java
             artifact sourcesJar
             artifact javadocJar
+          
+            pom {
+                name = artifactId
+                description = 'Gradle plugin to use Android AAR libraries on Eclipse'
+                url = 'https://github.com/simonpoole/gradle-eclipse-aar-plugin'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'ksoichiro'
+                        name = 'Soichiro Kashima'
+                    }
+                    developer {
+                            name = 'Simon Poole'
+                    }
+                }
+            }
+            
+            repositories {
+                maven {
+                    name = 'sonatype'
+                    credentials {
+                        username = user
+                        password = password
+                    }
+                    def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                    def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                    url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+                }
+            }
         }
     }
 }
 
-pluginBundle {
-    website = POM_URL
-   // vcsUrl = BINTRAY_VCS_URL
-
-    description = POM_DESCRIPTION
-
-    plugins {
-        plugin {
-            id = GRADLE_PLUGIN_ID
-            displayName = POM_NAME
-            tags = ['Android', 'eclipse', 'AAR']
-        }
-    }
-
-    mavenCoordinates {
-        artifactId = POM_ARTIFACT_ID
-    }
+signing {
+    sign publishing.publications.plugin
 }
