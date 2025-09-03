@@ -4,28 +4,31 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
         mavenCentral()
+        mavenLocal()
     }
     dependencies {
         classpath "com.gradle.publish:plugin-publish-plugin:0.9.1"
+        classpath 'ch.poole.misc:gradle-eclipse-aar-plugin:0.1.0'
     }
 }
 
 plugins {
-    id 'maven'
     id 'maven-publish'
-    id 'com.jfrog.bintray' version '1.2'
-    id 'net.saliman.cobertura' version '2.2.5'
     id 'com.github.kt3k.coveralls' version '2.3.1'
-    id 'com.github.ksoichiro.build.info' version '0.1.2'
 }
 
 apply plugin: 'groovy'
-apply plugin: 'com.gradle.plugin-publish'
+apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 group = GROUP
 version = VERSION_NAME
 archivesBaseName = POM_ARTIFACT_ID
+
+ext {
+    user = System.getenv('SONATYPE_USER')
+    password = System.getenv('SONATYPE_PASSWORD')
+}
 
 // To release:
 // ./gradlew clean assemble uploadArchives -Prelease
@@ -49,20 +52,20 @@ if (isReleaseBuild) {
     sonatypeRepositoryUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
 }
 
+apply from: '../../gradle-tasks/eclipse-3'
+
 // Note: These properties must be defined in ~/.gradle/gradle.properties
 // and signing.keyId, signing.password, signing.secretKeyRingFile, too.
 def username = hasProperty("nexusUsername") ? project.getProperty("nexusUsername") : ""
 def password = hasProperty("nexusPassword") ? project.getProperty("nexusPassword") : ""
 
-def bintrayUsername = hasProperty("bintrayUsername") ? project.getProperty("bintrayUsername") : ""
-def bintrayApiKey = hasProperty("bintrayApiKey") ? project.getProperty("bintrayApiKey") : ""
-
 dependencies {
-    compile gradleApi()
-    compile localGroovy()
-    compile 'org.apache.maven:maven-artifact:3.3.9'
-    testCompile 'com.android.tools.build:gradle:1.0.0'
-    testCompile ('org.spockframework:spock-core:1.0-groovy-2.3') {
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation 'org.apache.maven:maven-artifact:3.3.9'
+    testImplementation 'junit:junit:4.13'
+    testImplementation 'com.android.tools.build:gradle:1.0.0'
+    testImplementation ('org.spockframework:spock-core:2.3-groovy-3.0') {
         exclude group: 'org.codehaus.groovy', module: 'groovy-all'
     }
 }
@@ -71,141 +74,74 @@ repositories {
     mavenCentral()
 }
 
-install {
-    repositories.mavenInstaller {
-        pom.artifactId = POM_ARTIFACT_ID
-    }
+signing {
+    required { isReleaseBuild && gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
 }
 
-cobertura {
-    coverageFormats = ['html', 'xml']
-    coverageSourceDirs = sourceSets.main.groovy.srcDirs
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
 }
 
-afterEvaluate { project ->
-    uploadArchives {
-        if (isReleaseBuild) {
-            repositories {
-                mavenDeployer {
-                    beforeDeployment { deployment -> signing.signPom(deployment) }
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
 
-                    repository(url: sonatypeRepositoryUrl) {
-                        authentication(userName: username, password: password)
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+publishing {
+    publications {
+        plugin(MavenPublication) {
+            groupId 'ch.poole.misc'
+            artifactId POM_NAME
+            version VERSION_NAME
+
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+          
+            pom {
+                name = artifactId
+                description = 'Gradle plugin to use Android AAR libraries on Eclipse'
+                url = 'https://github.com/simonpoole/gradle-eclipse-aar-plugin'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
-
-                    pom.project {
-                        name POM_NAME
-                        groupId GROUP
-                        description POM_DESCRIPTION
-                        url POM_URL
-                        inceptionYear POM_INCEPTION_YEAR
-
-                        scm {
-                            url POM_SCM_URL
-                            connection POM_SCM_CONNECTION
-                            developerConnection POM_SCM_DEV_CONNECTION
-                        }
-
-                        licenses {
-                            license {
-                                name POM_LICENSE_NAME
-                                url POM_LICENSE_URL
-                                distribution POM_LICENSE_DIST
-                            }
-                        }
-
-                        developers {
-                            developer {
-                                id POM_DEVELOPER_ID
-                                name POM_DEVELOPER_NAME
-                                url POM_DEVELOPER_URL
-                            }
-                        }
+                }
+                developers {
+                    developer {
+                        id = 'ksoichiro'
+                        name = 'Soichiro Kashima'
+                    }
+                    developer {
+                            name = 'Simon Poole'
                     }
                 }
             }
-        } else {
-            // for development
+            
             repositories {
-                mavenDeployer {
-                    repository(url: uri('../samples/repo'))
+                maven {
+                    name = 'sonatype'
+                    credentials {
+                        username = user
+                        password = password
+                    }
+                    def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                    def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                    url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
                 }
             }
         }
     }
-
-    signing {
-        required { isReleaseBuild && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.archives
-    }
-
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-
-    publishing {
-        publications {
-            plugin(MavenPublication) {
-                groupId GROUP
-                artifactId POM_ARTIFACT_ID
-                version VERSION_NAME
-
-                from components.java
-                artifact sourcesJar
-                artifact javadocJar
-            }
-        }
-    }
 }
 
-bintray {
-    user = bintrayUsername
-    key = bintrayApiKey
-
-    publications = ['plugin']
-
-    pkg {
-        repo = 'maven'
-        name = POM_NAME
-        desc = POM_DESCRIPTION
-        websiteUrl = POM_URL
-        issueTrackerUrl = BINTRAY_ISSUE_TRACKER_URL
-        vcsUrl = BINTRAY_VCS_URL
-        licenses = ['Apache-2.0']
-        labels = ['gradle', 'plugin', 'Android', 'eclipse', 'AAR']
-        publicDownloadNumbers = true
-        version {
-            attributes = ['gradle-plugin': 'com.github.ksoichiro.eclipse.aar:com.github.ksoichiro:gradle-eclipse-aar-plugin']
-        }
-    }
-}
-
-pluginBundle {
-    website = POM_URL
-    vcsUrl = BINTRAY_VCS_URL
-
-    description = POM_DESCRIPTION
-
-    plugins {
-        plugin {
-            id = GRADLE_PLUGIN_ID
-            displayName = POM_NAME
-            tags = ['Android', 'eclipse', 'AAR']
-        }
-    }
-
-    mavenCoordinates {
-        artifactId = POM_ARTIFACT_ID
-    }
+signing {
+    sign publishing.publications.plugin
 }

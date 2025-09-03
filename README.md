@@ -1,11 +1,9 @@
 # gradle-eclipse-aar-plugin
 
-[![Build Status](http://img.shields.io/travis/ksoichiro/gradle-eclipse-aar-plugin.svg?style=flat&branch=master)](https://travis-ci.org/ksoichiro/gradle-eclipse-aar-plugin)
-[![Coverage Status](https://coveralls.io/repos/github/ksoichiro/gradle-eclipse-aar-plugin/badge.svg?branch=master)](https://coveralls.io/github/ksoichiro/gradle-eclipse-aar-plugin?branch=master)
-[![Maven Central](http://img.shields.io/maven-central/v/com.github.ksoichiro/gradle-eclipse-aar-plugin.svg?style=flat)](https://github.com/ksoichiro/gradle-eclipse-aar-plugin/releases/latest)
-
 Gradle plugin to use Android AAR libraries on Eclipse.  
 With this plugin, you can manage dependencies with Gradle and build app on Eclipse.
+
+__This is a fork of the original plugin by Soichiro Kashima updated to work with somewhat more recent gradle versions and minimal changes that I can publish it on maven central.__  
 
 Android Studio has been officially released, but some of you still want/are forced to use Eclipse ADT for some reasons.
 Android Studio has much better build system by integrating Gradle, and many of the remarkable features are unavailable in Eclipse.
@@ -50,7 +48,7 @@ buildscript {
 }
 
 plugins {
-    id 'com.github.ksoichiro.eclipse.aar' version '0.3.1'
+    id 'ch.poole.misc.eclipse.aar' version '0.1.0'
 }
 
 apply plugin: 'com.android.application'
@@ -69,14 +67,14 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:1.0.0'
-        classpath 'com.github.ksoichiro:gradle-eclipse-aar-plugin:0.3.1'
+        classpath 'ch.poole.misc:gradle-eclipse-aar-plugin:0.1.0'
     }
 }
 
 apply plugin: 'com.android.application'
 
 // Apply this plugin
-apply plugin: 'com.github.ksoichiro.eclipse.aar'
+apply plugin: 'ch.poole.misc.eclipse.aar'
 ```
 
 And configure it in `eclipseAar` closure.
